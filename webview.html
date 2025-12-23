@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok Login & Grab</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #000;
+      color: #fff;
+    }
+    
+    .top-bar {
+      background: linear-gradient(135deg, #ff0050 0%, #00f2ea 100%);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    
+    .top-bar-title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .top-bar-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .action-btn:active {
+      background: rgba(0,0,0,0.5);
+    }
+    
+    .action-btn.primary {
+      background: #fff;
+      color: #000;
+    }
+    
+    .webview-container {
+      width: 100%;
+      height: calc(100vh - 60px);
+      position: relative;
+    }
+    
+    #webview {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    
+    .floating-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff0050 0%, #00f2ea 100%);
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(255,0,80,0.5);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .floating-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.95);
+      display: none;
+      z-index: 2000;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    
+    .modal.show {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+    
+    .modal-content {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #161616;
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid #2a2a2a;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    
+    .modal-title {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 8px;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    
+    .result-section {
+      background: #0a0a0a;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+    }
+    
+    .result-item {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    
+    .result-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    
+    .result-label {
+      font-size: 12px;
+      opacity: 0.6;
+      margin-bottom: 5px;
+    }
+    
+    .result-value {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      word-break: break-all;
+      color: #00f2ea;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    
+    .btn-copy {
+      background: #2a2a2a;
+      color: #fff;
+    }
+    
+    .btn-save {
+      background: #00c853;
+      color: #fff;
+    }
+    
+    .notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00c853;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 3000;
+      display: none;
+      animation: slideDown 0.3s;
+    }
+    
+    .notification.show {
+      display: block;
+    }
+    
+    .notification.error {
+      background: #ff0050;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+    
+    .instruction {
+      background: rgba(0,242,234,0.1);
+      border: 1px solid rgba(0,242,234,0.3);
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+    
+    .instruction strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #00f2ea;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div class="top-bar-title">🎵 TikTok Login</div>
+    <div class="top-bar-actions">
+      <button class="action-btn" onclick="reloadWebview()">🔄</button>
+      <button class="action-btn primary" onclick="grabSessionFromWebview()">🎯 Grab</button>
+    </div>
+  </div>
+  
+  <div class="webview-container">
+    <iframe id="webview" src="https://www.tiktok.com/login"></iframe>
+  </div>
+  
+  <button class="floating-btn" onclick="grabSessionFromWebview()">
+    🎯
+  </button>
+  
+  <div class="modal" id="resultModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">✅ Session Grabbed!</div>
+        <button class="close-btn" onclick="closeModal()">✕</button>
+      </div>
+      
+      <div class="instruction">
+        <strong>📱 Session saved successfully!</strong>
+        You can now use this session for automation or login
+      </div>
+      
+      <div class="result-section" id="resultContent">
+        <!-- Results will be inserted here -->
+      </div>
+      
+      <button class="btn btn-copy" onclick="copyResult()">
+        📋 Copy All
+      </button>
+      <button class="btn btn-save" onclick="saveAndClose()">
+        💾 Save & Close
+      </button>
+    </div>
+  </div>
+  
+  <div class="notification" id="notification"></div>
+  
+  <script>
+    let currentSession = null;
+    let accounts = JSON.parse(localStorage.getItem('tiktok_accounts') || '[]');
+    
+    // Check if webview loaded
+    const webview = document.getElementById('webview');
+    webview.onload = () => {
+      console.log('TikTok loaded');
+      checkLoginStatus();
+    };
+    
+    function reloadWebview() {
+      webview.src = webview.src;
+      showNotification('🔄 Reloading...', 'info');
+    }
+    
+    function checkLoginStatus() {
+      try {
+        // Try to check if user is logged in
+        const iframeWindow = webview.contentWindow;
+        
+        // Send message to check login
+        setTimeout(() => {
+          try {
+            const cookies = getCookiesFromWebview();
+            if (cookies.sessionid) {
+              console.log('User is logged in');
+            }
+          } catch (e) {
+            console.log('Checking login status...');
+          }
+        }, 2000);
+      } catch (e) {
+        console.log('Cross-origin restriction');
+      }
+    }
+    
+    function getCookiesFromWebview() {
+      try {
+        // Method 1: Direct access (works if same origin)
+        const iframeDoc = webview.contentDocument || webview.contentWindow.document;
+        const cookieString = iframeDoc.cookie;
+        
+        const cookies = {};
+        cookieString.split(';').forEach(cookie => {
+          const [key, value] = cookie.trim().split('=');
+          if (key && value) cookies[key] = value;
+        });
+        
+        return cookies;
+      } catch (e) {
+        // Method 2: Use postMessage (if iframe supports it)
+        console.log('Using alternative cookie extraction...');
+        
+        // Inject script into iframe
+        try {
+          const script = `
+            (function() {
+              const cookies = {};
+              document.cookie.split(';').forEach(c => {
+                const [k,v] = c.trim().split('=');
+                if(k && v) cookies[k] = v;
+              });
+              window.parent.postMessage({type:'cookies', data:cookies}, '*');
+            })();
+          `;
+          
+          webview.contentWindow.eval(script);
+          
+          // Wait for message
+          return new Promise((resolve) => {
+            window.addEventListener('message', (event) => {
+              if (event.data.type === 'cookies') {
+                resolve(event.data.data);
+              }
+            }, { once: true });
+          });
+        } catch (err) {
+          console.error('Cannot extract cookies:', err);
+          return null;
+        }
+      }
+    }
+    
+    async function grabSessionFromWebview() {
+      showNotification('🔄 Grabbing session...', 'info');
+      
+      try {
+        // Method 1: Try direct cookie access
+        let cookies = null;
+        
+        try {
+          cookies = getCookiesFromWebview();
+        } catch (e) {
+          console.log('Direct access failed, trying alternative...');
+        }
+        
+        // Method 2: Use browser's cookie API (if available)
+        if (!cookies || !cookies.sessionid) {
+          // For Chrome Android with specific permissions
+          if (navigator.cookieStore) {
+            try {
+              const allCookies = await navigator.cookieStore.getAll({
+                domain: '.tiktok.com'
+              });
+              
+              cookies = {};
+              allCookies.forEach(cookie => {
+                cookies[cookie.name] = cookie.value;
+              });
+            } catch (e) {
+              console.log('Cookie Store API not available');
+            }
+          }
+        }
+        
+        // Method 3: Manual extraction via console
+        if (!cookies || !cookies.sessionid) {
+          showManualExtractionModal();
+          return;
+        }
+        
+        // Process cookies
+        if (cookies && cookies.sessionid) {
+          const username = extractUsername();
+          
+          currentSession = {
+            username: username,
+            sessionid: cookies.sessionid || '',
+            sessionid_ss: cookies.sessionid_ss || '',
+            sid_tt: cookies.sid_tt || '',
+            sid_guard: cookies.sid_guard || '',
+            uid_tt: cookies.uid_tt || '',
+            ttwid: cookies.ttwid || '',
+            msToken: cookies.msToken || '',
+            timestamp: new Date().toISOString()
+          };
+          
+          displayResult(currentSession);
+          showNotification('✅ Session grabbed!', 'success');
+        } else {
+          showNotification('❌ Please login first!', 'error');
+        }
+        
+      } catch (error) {
+        console.error('Grab error:', error);
+        showNotification('❌ Error: ' + error.message, 'error');
+        showManualExtractionModal();
+      }
+    }
+    
+    function extractUsername() {
+      try {
+        const iframeDoc = webview.contentDocument || webview.contentWindow.document;
+        
+        // Try to extract from page
+        const title = iframeDoc.title;
+        const match = title.match(/@([^\s|]+)/);
+        if (match) return match[1];
+        
+        // Try from URL
+        const url = webview.contentWindow.location.href;
+        const urlMatch = url.match(/@([^/]+)/);
+        if (urlMatch) return urlMatch[1];
+        
+        return 'Unknown';
+      } catch (e) {
+        return 'Unknown';
+      }
+    }
+    
+    function displayResult(session) {
+      const content = document.getElementById('resultContent');
+      
+      content.innerHTML = `
+        <div class="result-item">
+          <div class="result-label">👤 Username</div>
+          <div class="result-value">${session.username}</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">🔑 Session ID</div>
+          <div class="result-value">${session.sessionid.substring(0, 40)}...</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">🆔 SID TT</div>
+          <div class="result-value">${session.sid_tt.substring(0, 40)}...</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">⏰ Timestamp</div>
+          <div class="result-value">${new Date(session.timestamp).toLocaleString()}</div>
+        </div>
+        <div class="result-item">
+          <div class="result-label">📋 Format</div>
+          <div class="result-value">${session.username}:${session.sessionid}</div>
+        </div>
+      `;
+      
+      document.getElementById('resultModal').classList.add('show');
+    }
+    
+    function showManualExtractionModal() {
+      const content = document.getElementById('resultContent');
+      
+      content.innerHTML = `
+        <div class="instruction">
+          <strong>⚠️ Auto-grab failed</strong>
+          Please extract cookies manually:
+          <br><br>
+          1. In the TikTok page above, press F12 (or Menu → Inspect)
+          <br>
+          2. Go to Console tab
+          <br>
+          3. Type: <code style="color:#00f2ea">document.cookie</code>
+          <br>
+          4. Copy the result
+          <br>
+          5. Paste below:
+        </div>
+        <textarea id="manualCookies" style="width:100%; height:150px; background:#0a0a0a; color:#fff; border:1px solid #2a2a2a; border-radius:8px; padding:10px; font-family:monospace; font-size:12px; margin:15px 0;" placeholder="Paste cookies here..."></textarea>
+      `;
+      
+      document.querySelector('.btn-copy').textContent = '✅ Process Cookies';
+      document.querySelector('.btn-copy').onclick = processManualCookies;
+      document.getElementById('resultModal').classList.add('show');
+    }
+    
+    function processManualCookies() {
+      const cookieString = document.getElementById('manualCookies').value.trim();
+      
+      if (!cookieString) {
+        showNotification('❌ Please paste cookies!', 'error');
+        return;
+      }
+      
+      const cookies = {};
+      cookieString.split(';').forEach(cookie => {
+        const [key, value] = cookie.trim().split('=');
+        if (key && value) cookies[key] = value;
+      });
+      
+      if (!cookies.sessionid) {
+        showNotification('❌ No sessionid found!', 'error');
+        return;
+      }
+      
+      const username = prompt('Enter username (optional):') || 'Unknown';
+      
+      currentSession = {
+        username: username,
+        sessionid: cookies.sessionid || '',
+        sessionid_ss: cookies.sessionid_ss || '',
+        sid_tt: cookies.sid_tt || '',
+        sid_guard: cookies.sid_guard || '',
+        uid_tt: cookies.uid_tt || '',
+        ttwid: cookies.ttwid || '',
+        msToken: cookies.msToken || '',
+        timestamp: new Date().toISOString()
+      };
+      
+      displayResult(currentSession);
+      showNotification('✅ Cookies processed!', 'success');
+    }
+    
+    function copyResult() {
+      if (!currentSession) return;
+      
+      const text = `TikTok Account Session
+Username: ${currentSession.username}
+SessionID: ${currentSession.sessionid}
+SID_TT: ${currentSession.sid_tt}
+Time: ${new Date(currentSession.timestamp).toLocaleString()}
+
+Format: ${currentSession.username}:${currentSession.sessionid}
+`;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        showNotification('✅ Copied!', 'success');
+      }).catch(() => {
+        showNotification('❌ Copy failed', 'error');
+      });
+    }
+    
+    function saveAndClose() {
+      if (!currentSession) return;
+      
+      accounts.push(currentSession);
+      localStorage.setItem('tiktok_accounts', JSON.stringify(accounts));
+      
+      showNotification('✅ Saved!', 'success');
+      closeModal();
+      
+      // Ask if want to grab another
+      setTimeout(() => {
+        if (confirm('Account saved! Grab another account?')) {
+          reloadWebview();
+        }
+      }, 1000);
+    }
+    
+    function closeModal() {
+      document.getElementById('resultModal').classList.remove('show');
+      currentSession = null;
+    }
+    
+    function showNotification(message, type) {
+      const notif = document.getElementById('notification');
+      notif.textContent = message;
+      notif.className = 'notification show' + (type === 'error' ? ' error' : '');
+      
+      setTimeout(() => {
+        notif.classList.remove('show');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
